@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>NeuroRhythm 截图转换器</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; text-align: center; padding: 40px; background: #F5F7FA; color: #334155; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        h2 { font-weight: 300; letter-spacing: 1px; }
+        .radio-group { margin: 20px 0; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        .radio-group label { font-size: 14px; font-weight: 500; cursor: pointer; padding: 10px 16px; border: 2px solid #D1D9E0; border-radius: 12px; transition: 0.2s; }
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + label { border-color: #7DBCB5; background: rgba(125,188,181,0.1); color: #5A8A82; }
+        #drop-zone { border: 2px dashed #7DBCB5; padding: 50px 20px; border-radius: 16px; background: rgba(245,247,250,0.8); cursor: pointer; margin-top: 20px; transition: 0.2s; }
+        #drop-zone:hover { background: rgba(125,188,181,0.06); }
+        #status { margin-top: 20px; text-align: left; max-height: 200px; overflow-y: auto; padding: 12px; background: #F5F7FA; border-radius: 8px; font-size: 13px; line-height: 1.8; color: #8896A4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📱 💻 NeuroRhythm App Store 截图转换器</h2>
+        <p style="color:#8896A4; font-size:14px;">选择目标尺寸，拖入截图自动转换并下载</p>
+
+        <div class="radio-group">
+            <input type="radio" id="t1" name="target" value="1242x2688" checked>
+            <label for="t1">iPhone 6.5"<br><small>1242×2688</small></label>
+
+            <input type="radio" id="t2" name="target" value="1284x2778">
+            <label for="t2">iPhone 6.7"<br><small>1284×2778</small></label>
+
+            <input type="radio" id="t3" name="target" value="2688x1242">
+            <label for="t3">iPhone 6.5" 横屏<br><small>2688×1242</small></label>
+
+            <input type="radio" id="t4" name="target" value="2778x1284">
+            <label for="t4">iPhone 6.7" 横屏<br><small>2778×1284</small></label>
+
+            <input type="radio" id="t5" name="target" value="1640x2360">
+            <label for="t5">iPad 11" 竖屏<br><small>1640×2360</small></label>
+
+            <input type="radio" id="t6" name="target" value="2048x2732">
+            <label for="t6">iPad Pro 12.9"<br><small>2048×2732</small></label>
+        </div>
+
+        <div id="drop-zone">把截图拖到这里，或点击选择文件（可多选）</div>
+        <input type="file" id="file-input" multiple accept="image/*" style="display:none">
+        <div id="status">准备就绪...</div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const status = document.getElementById('status');
+
+        dropZone.onclick = () => fileInput.click();
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = '#5A9A8E'; };
+        dropZone.ondragleave = () => { dropZone.style.borderColor = '#7DBCB5'; };
+        dropZone.ondrop = (e) => { e.preventDefault(); dropZone.style.borderColor = '#7DBCB5'; handleFiles(e.dataTransfer.files); };
+        fileInput.onchange = (e) => handleFiles(e.target.files);
+
+        function getTarget() {
+            const val = document.querySelector('input[name="target"]:checked').value.split('x');
+            return { w: parseInt(val[0]), h: parseInt(val[1]) };
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            const { w: TARGET_W, h: TARGET_H } = getTarget();
+
+            status.innerHTML = `<b>正在处理 ${files.length} 张图片 → ${TARGET_W}×${TARGET_H}...</b><br>`;
+
+            Array.from(files).forEach((file, idx) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = TARGET_W;
+                        canvas.height = TARGET_H;
+                        const ctx = canvas.getContext('2d');
+
+                        // App 背景色
+                        ctx.fillStyle = '#F5F7FA';
+                        ctx.fillRect(0, 0, TARGET_W, TARGET_H);
+
+                        const origRatio = img.width / img.height;
+                        const targetRatio = TARGET_W / TARGET_H;
+
+                        if (Math.abs(origRatio - targetRatio) < 0.05) {
+                            // 比例接近，直接铺满
+                            ctx.drawImage(img, 0, 0, TARGET_W, TARGET_H);
+                        } else {
+                            // 等比缩放居中，左右/上下补底色
+                            let newW, newH;
+                            if (origRatio > targetRatio) {
+                                newW = TARGET_W;
+                                newH = TARGET_W / origRatio;
+                            } else {
+                                newH = TARGET_H;
+                                newW = TARGET_H * origRatio;
+                            }
+                            const x = (TARGET_W - newW) / 2;
+                            const y = (TARGET_H - newH) / 2;
+                            ctx.drawImage(img, x, y, newW, newH);
+                        }
+
+                        const link = document.createElement('a');
+                        link.download = `NR_${TARGET_W}x${TARGET_H}_${idx + 1}.jpg`;
+                        link.href = canvas.toDataURL('image/jpeg', 0.95);
+                        link.click();
+                        status.innerHTML += `✅ ${file.name} → ${TARGET_W}×${TARGET_H} 完成<br>`;
+                    };
+                };
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>NeuroRhythm 需要读取您的健康数据（心率变异性、心率、血氧、睡眠）来计算神经疲劳指数和脑区容量。</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>NeuroRhythm 需要写入正念训练记录到健康数据中。</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>NeuroRhythm 需要访问您的日历来排程任务和检测忙碌时段。</string>
+</dict>
+</plist>
